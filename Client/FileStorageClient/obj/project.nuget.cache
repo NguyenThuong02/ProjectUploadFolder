@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "dgSpecHash": "j1iKKfliEIY=",
+  "success": true,
+  "projectFilePath": "/Applications/ProjectOutSource/FileStorageApp/Client/FileStorageClient/FileStorageClient.csproj",
+  "expectedPackageFiles": [
+    "/Users/nguyenthanhthuong/.nuget/packages/microsoft.netcore.app.ref/8.0.16/microsoft.netcore.app.ref.8.0.16.nupkg.sha512",
+    "/Users/nguyenthanhthuong/.nuget/packages/microsoft.windowsdesktop.app.ref/8.0.16/microsoft.windowsdesktop.app.ref.8.0.16.nupkg.sha512",
+    "/Users/nguyenthanhthuong/.nuget/packages/microsoft.aspnetcore.app.ref/8.0.16/microsoft.aspnetcore.app.ref.8.0.16.nupkg.sha512",
+    "/Users/nguyenthanhthuong/.nuget/packages/microsoft.netcore.app.host.osx-arm64/8.0.16/microsoft.netcore.app.host.osx-arm64.8.0.16.nupkg.sha512"
+  ],
+  "logs": []
+}

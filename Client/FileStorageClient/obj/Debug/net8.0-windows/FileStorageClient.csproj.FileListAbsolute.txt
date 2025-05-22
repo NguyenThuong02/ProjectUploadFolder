@@ -1,0 +1,14 @@
+/Applications/ProjectOutSource/FileStorageApp/Client/FileStorageClient/obj/Debug/net8.0-windows/FileStorageClient.GeneratedMSBuildEditorConfig.editorconfig
+/Applications/ProjectOutSource/FileStorageApp/Client/FileStorageClient/obj/Debug/net8.0-windows/FileStorageClient.AssemblyInfoInputs.cache
+/Applications/ProjectOutSource/FileStorageApp/Client/FileStorageClient/obj/Debug/net8.0-windows/FileStorageClient.AssemblyInfo.cs
+/Applications/ProjectOutSource/FileStorageApp/Client/FileStorageClient/obj/Debug/net8.0-windows/FileStorageClient.csproj.CoreCompileInputs.cache
+/Applications/ProjectOutSource/FileStorageApp/Client/FileStorageClient/bin/Debug/net8.0-windows/FileStorageClient
+/Applications/ProjectOutSource/FileStorageApp/Client/FileStorageClient/bin/Debug/net8.0-windows/FileStorageClient.deps.json
+/Applications/ProjectOutSource/FileStorageApp/Client/FileStorageClient/bin/Debug/net8.0-windows/FileStorageClient.runtimeconfig.json
+/Applications/ProjectOutSource/FileStorageApp/Client/FileStorageClient/bin/Debug/net8.0-windows/FileStorageClient.dll
+/Applications/ProjectOutSource/FileStorageApp/Client/FileStorageClient/bin/Debug/net8.0-windows/FileStorageClient.pdb
+/Applications/ProjectOutSource/FileStorageApp/Client/FileStorageClient/obj/Debug/net8.0-windows/FileStorageClient.dll
+/Applications/ProjectOutSource/FileStorageApp/Client/FileStorageClient/obj/Debug/net8.0-windows/refint/FileStorageClient.dll
+/Applications/ProjectOutSource/FileStorageApp/Client/FileStorageClient/obj/Debug/net8.0-windows/FileStorageClient.pdb
+/Applications/ProjectOutSource/FileStorageApp/Client/FileStorageClient/obj/Debug/net8.0-windows/FileStorageClient.genruntimeconfig.cache
+/Applications/ProjectOutSource/FileStorageApp/Client/FileStorageClient/obj/Debug/net8.0-windows/ref/FileStorageClient.dll

@@ -1,0 +1,14 @@
+/Applications/ProjectOutSource/FileStorageApp/Server/FileStorageServer/bin/Debug/net8.0/FileStorageServer
+/Applications/ProjectOutSource/FileStorageApp/Server/FileStorageServer/bin/Debug/net8.0/FileStorageServer.deps.json
+/Applications/ProjectOutSource/FileStorageApp/Server/FileStorageServer/bin/Debug/net8.0/FileStorageServer.runtimeconfig.json
+/Applications/ProjectOutSource/FileStorageApp/Server/FileStorageServer/bin/Debug/net8.0/FileStorageServer.dll
+/Applications/ProjectOutSource/FileStorageApp/Server/FileStorageServer/bin/Debug/net8.0/FileStorageServer.pdb
+/Applications/ProjectOutSource/FileStorageApp/Server/FileStorageServer/obj/Debug/net8.0/FileStorageServer.GeneratedMSBuildEditorConfig.editorconfig
+/Applications/ProjectOutSource/FileStorageApp/Server/FileStorageServer/obj/Debug/net8.0/FileStorageServer.AssemblyInfoInputs.cache
+/Applications/ProjectOutSource/FileStorageApp/Server/FileStorageServer/obj/Debug/net8.0/FileStorageServer.AssemblyInfo.cs
+/Applications/ProjectOutSource/FileStorageApp/Server/FileStorageServer/obj/Debug/net8.0/FileStorageServer.csproj.CoreCompileInputs.cache
+/Applications/ProjectOutSource/FileStorageApp/Server/FileStorageServer/obj/Debug/net8.0/FileStorageServer.dll
+/Applications/ProjectOutSource/FileStorageApp/Server/FileStorageServer/obj/Debug/net8.0/refint/FileStorageServer.dll
+/Applications/ProjectOutSource/FileStorageApp/Server/FileStorageServer/obj/Debug/net8.0/FileStorageServer.pdb
+/Applications/ProjectOutSource/FileStorageApp/Server/FileStorageServer/obj/Debug/net8.0/FileStorageServer.genruntimeconfig.cache
+/Applications/ProjectOutSource/FileStorageApp/Server/FileStorageServer/obj/Debug/net8.0/ref/FileStorageServer.dll
