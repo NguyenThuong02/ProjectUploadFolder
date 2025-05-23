@@ -12,6 +12,8 @@ namespace FileStorageClient
         private readonly FileStorageClient _client;
         private string _currentDirectory = "";
         private string _username = "";
+        // Thêm biến để lưu trữ biểu tượng
+        private ImageList _imageList;
 
         public MainForm()
         {
@@ -33,75 +35,131 @@ namespace FileStorageClient
         private void InitializeComponent()
         {
             this.Text = "Ứng dụng lưu trữ file";
-            this.Size = new Size(800, 600);
+            this.Size = new Size(900, 650);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormClosing += MainForm_FormClosing;
+            this.Icon = SystemIcons.Application;
+
+            // Tạo ImageList cho các biểu tượng
+            _imageList = new ImageList();
+            _imageList.ColorDepth = ColorDepth.Depth32Bit;
+            _imageList.ImageSize = new Size(16, 16);
+            _imageList.Images.Add(SystemIcons.Application); // Index 0: Folder icon (thay thế SystemIcons.Folder)
+            _imageList.Images.Add(SystemIcons.WinLogo); // Index 1: File icon
 
             // Panel đăng nhập
             Panel loginPanel = new Panel
             {
                 Dock = DockStyle.Fill,
-                Name = "loginPanel"
+                Name = "loginPanel",
+                BackColor = Color.WhiteSmoke
             };
 
             Label lblTitle = new Label
             {
                 Text = "ỨNG DỤNG LƯU TRỮ FILE",
-                Font = new Font("Arial", 16, FontStyle.Bold),
+                Font = new Font("Segoe UI", 20, FontStyle.Bold),
+                ForeColor = Color.DarkBlue,
                 TextAlign = ContentAlignment.MiddleCenter,
                 Dock = DockStyle.Top,
-                Height = 50
+                Height = 80
+            };
+
+            Panel buttonPanel = new Panel
+            {
+                Width = 250,
+                Height = 150,
+                Location = new Point((loginPanel.Width - 250) / 2, 150),
+                Anchor = AnchorStyles.None
             };
 
             Button btnLogin = new Button
             {
                 Text = "Đăng nhập",
-                Size = new Size(200, 40),
-                Location = new Point((loginPanel.Width - 200) / 2, 150),
-                Anchor = AnchorStyles.None
+                Size = new Size(200, 45),
+                Location = new Point(25, 0),
+                Font = new Font("Segoe UI", 10),
+                BackColor = Color.RoyalBlue,
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat
             };
+            btnLogin.FlatAppearance.BorderSize = 0;
             btnLogin.Click += BtnLogin_Click;
 
             Button btnRegister = new Button
             {
                 Text = "Đăng ký",
-                Size = new Size(200, 40),
-                Location = new Point((loginPanel.Width - 200) / 2, 210),
-                Anchor = AnchorStyles.None
+                Size = new Size(200, 45),
+                Location = new Point(25, 60),
+                Font = new Font("Segoe UI", 10),
+                BackColor = Color.SeaGreen,
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat
             };
+            btnRegister.FlatAppearance.BorderSize = 0;
             btnRegister.Click += BtnRegister_Click;
 
+            buttonPanel.Controls.Add(btnLogin);
+            buttonPanel.Controls.Add(btnRegister);
+
             loginPanel.Controls.Add(lblTitle);
-            loginPanel.Controls.Add(btnLogin);
-            loginPanel.Controls.Add(btnRegister);
+            loginPanel.Controls.Add(buttonPanel);
 
             // Panel quản lý file
             Panel filePanel = new Panel
             {
                 Dock = DockStyle.Fill,
                 Visible = false,
-                Name = "filePanel"
+                Name = "filePanel",
+                BackColor = Color.White
             };
 
             // Toolbar
-            ToolStrip toolStrip = new ToolStrip();
+            ToolStrip toolStrip = new ToolStrip
+            {
+                BackColor = Color.WhiteSmoke,
+                RenderMode = ToolStripRenderMode.System,
+                GripStyle = ToolStripGripStyle.Hidden
+            };
+            
+            // Thêm nút Back vào đầu thanh công cụ
+            ToolStripButton btnBack = new ToolStripButton("Quay lại");
+            btnBack.Image = SystemIcons.Information.ToBitmap(); // Thay thế SystemIcons.ArrowLeft
+            btnBack.DisplayStyle = ToolStripItemDisplayStyle.ImageAndText;
+            btnBack.Click += BtnBack_Click;
+            toolStrip.Items.Add(btnBack);
+            
+            // Thêm dấu phân cách
+            toolStrip.Items.Add(new ToolStripSeparator());
             
             ToolStripButton btnUpload = new ToolStripButton("Tải lên");
+            btnUpload.Image = SystemIcons.Application.ToBitmap();
+            btnUpload.DisplayStyle = ToolStripItemDisplayStyle.ImageAndText;
             btnUpload.Click += BtnUpload_Click;
             
             ToolStripButton btnDownload = new ToolStripButton("Tải xuống");
+            btnDownload.Image = SystemIcons.Shield.ToBitmap();
+            btnDownload.DisplayStyle = ToolStripItemDisplayStyle.ImageAndText;
             btnDownload.Click += BtnDownload_Click;
             
             ToolStripButton btnCreateDir = new ToolStripButton("Tạo thư mục");
+            btnCreateDir.Image = SystemIcons.Application.ToBitmap(); // Thay thế SystemIcons.Folder
+            btnCreateDir.DisplayStyle = ToolStripItemDisplayStyle.ImageAndText;
             btnCreateDir.Click += BtnCreateDir_Click;
             
             ToolStripButton btnDelete = new ToolStripButton("Xóa");
+            btnDelete.Image = SystemIcons.Error.ToBitmap();
+            btnDelete.DisplayStyle = ToolStripItemDisplayStyle.ImageAndText;
             btnDelete.Click += BtnDelete_Click;
             
             ToolStripButton btnRefresh = new ToolStripButton("Làm mới");
+            btnRefresh.Image = SystemIcons.Information.ToBitmap();
+            btnRefresh.DisplayStyle = ToolStripItemDisplayStyle.ImageAndText;
             btnRefresh.Click += BtnRefresh_Click;
             
             ToolStripButton btnLogout = new ToolStripButton("Đăng xuất");
+            btnLogout.Image = SystemIcons.WinLogo.ToBitmap();
+            btnLogout.DisplayStyle = ToolStripItemDisplayStyle.ImageAndText;
             btnLogout.Click += BtnLogout_Click;
 
             toolStrip.Items.Add(btnUpload);
@@ -109,28 +167,35 @@ namespace FileStorageClient
             toolStrip.Items.Add(btnCreateDir);
             toolStrip.Items.Add(btnDelete);
             toolStrip.Items.Add(btnRefresh);
+            toolStrip.Items.Add(new ToolStripSeparator());
             toolStrip.Items.Add(btnLogout);
 
             // Path bar
             Panel pathPanel = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 30
+                Height = 40,
+                BackColor = Color.WhiteSmoke,
+                Padding = new Padding(5)
             };
 
             Label lblPath = new Label
             {
                 Text = "Đường dẫn:",
                 AutoSize = true,
-                Location = new Point(10, 5)
+                Location = new Point(10, 10),
+                Font = new Font("Segoe UI", 9)
             };
 
             TextBox txtPath = new TextBox
             {
                 Name = "txtPath",
                 ReadOnly = true,
-                Location = new Point(80, 5),
+                Location = new Point(80, 8),
                 Width = pathPanel.Width - 90,
+                Font = new Font("Segoe UI", 9),
+                BorderStyle = BorderStyle.FixedSingle,
+                BackColor = Color.White,
                 Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top
             };
 
@@ -144,16 +209,26 @@ namespace FileStorageClient
                 Dock = DockStyle.Fill,
                 View = View.Details,
                 FullRowSelect = true,
-                MultiSelect = false
+                MultiSelect = false,
+                GridLines = true,
+                SmallImageList = _imageList,
+                Font = new Font("Segoe UI", 9)
             };
-            listView.Columns.Add("Tên", 300);
-            listView.Columns.Add("Loại", 100);
+            listView.Columns.Add("Tên", 350);
+            listView.Columns.Add("Loại", 150);
             listView.DoubleClick += ListView_DoubleClick;
 
             // Status bar
-            StatusStrip statusStrip = new StatusStrip();
-            ToolStripStatusLabel lblStatus = new ToolStripStatusLabel("Sẵn sàng");
-            lblStatus.Name = "lblStatus";
+            StatusStrip statusStrip = new StatusStrip
+            {
+                BackColor = Color.WhiteSmoke,
+                SizingGrip = false
+            };
+            ToolStripStatusLabel lblStatus = new ToolStripStatusLabel("Sẵn sàng")
+            {
+                Name = "lblStatus",
+                Font = new Font("Segoe UI", 9)
+            };
             statusStrip.Items.Add(lblStatus);
 
             filePanel.Controls.Add(listView);
@@ -499,6 +574,25 @@ namespace FileStorageClient
             promptForm.AcceptButton = confirmButton;
 
             return promptForm.ShowDialog() == DialogResult.OK ? textBox.Text : null;
+        }
+
+        // Thêm phương thức xử lý sự kiện cho nút Back
+        private void BtnBack_Click(object? sender, EventArgs e)
+        {
+            // Đi lên thư mục cha
+            if (!string.IsNullOrEmpty(_currentDirectory))
+            {
+                int lastSlash = _currentDirectory.LastIndexOf('/');
+                if (lastSlash >= 0)
+                {
+                    _currentDirectory = _currentDirectory.Substring(0, lastSlash);
+                }
+                else
+                {
+                    _currentDirectory = "";
+                }
+                RefreshFileList();
+            }
         }
     }
 }
