@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -32,6 +34,110 @@ namespace FileStorageClient
             }
         }
 
+        // Phương thức tạo icon folder tùy chỉnh (màu vàng)
+        private Bitmap CreateFolderIcon(int size = 16)
+        {
+            Bitmap bitmap = new Bitmap(size, size);
+            using (Graphics g = Graphics.FromImage(bitmap))
+            {
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.Clear(Color.Transparent);
+
+                // Vẽ folder với màu vàng
+                using (SolidBrush folderBrush = new SolidBrush(Color.FromArgb(255, 193, 84)))
+                using (SolidBrush tabBrush = new SolidBrush(Color.FromArgb(255, 206, 118)))
+                {
+                    // Vẽ tab của folder
+                    Rectangle tabRect = new Rectangle(1, 2, size / 3, 3);
+                    g.FillRectangle(tabBrush, tabRect);
+
+                    // Vẽ thân folder
+                    Rectangle folderRect = new Rectangle(1, 4, size - 2, size - 6);
+                    g.FillRectangle(folderBrush, folderRect);
+
+                    // Vẽ viền
+                    using (Pen borderPen = new Pen(Color.FromArgb(200, 160, 60), 1))
+                    {
+                        g.DrawRectangle(borderPen, tabRect);
+                        g.DrawRectangle(borderPen, folderRect);
+                    }
+
+                    // Thêm highlight để tạo hiệu ứng 3D
+                    using (SolidBrush highlightBrush = new SolidBrush(Color.FromArgb(100, 255, 255, 255)))
+                    {
+                        Rectangle highlightRect = new Rectangle(2, 5, size - 4, 2);
+                        g.FillRectangle(highlightBrush, highlightRect);
+                    }
+                }
+            }
+            return bitmap;
+        }
+
+        // Phương thức tạo icon file tùy chỉnh (màu xanh dương)
+        private Bitmap CreateFileIcon(int size = 16)
+        {
+            Bitmap bitmap = new Bitmap(size, size);
+            using (Graphics g = Graphics.FromImage(bitmap))
+            {
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.Clear(Color.Transparent);
+
+                // Vẽ file với màu xanh dương
+                using (SolidBrush fileBrush = new SolidBrush(Color.FromArgb(64, 133, 191)))
+                using (SolidBrush paperBrush = new SolidBrush(Color.White))
+                {
+                    // Tạo hình dạng file với góc gập
+                    GraphicsPath filePath = new GraphicsPath();
+                    int foldSize = size / 4;
+                    
+                    // Vẽ outline của file
+                    filePath.AddLine(1, 1, size - foldSize - 1, 1);
+                    filePath.AddLine(size - foldSize - 1, 1, size - 1, foldSize + 1);
+                    filePath.AddLine(size - 1, foldSize + 1, size - 1, size - 1);
+                    filePath.AddLine(size - 1, size - 1, 1, size - 1);
+                    filePath.AddLine(1, size - 1, 1, 1);
+                    
+                    g.FillPath(fileBrush, filePath);
+
+                    // Vẽ nền trắng cho nội dung
+                    GraphicsPath innerPath = new GraphicsPath();
+                    innerPath.AddLine(2, 2, size - foldSize - 2, 2);
+                    innerPath.AddLine(size - foldSize - 2, 2, size - 2, foldSize + 2);
+                    innerPath.AddLine(size - 2, foldSize + 2, size - 2, size - 2);
+                    innerPath.AddLine(size - 2, size - 2, 2, size - 2);
+                    innerPath.AddLine(2, size - 2, 2, 2);
+                    
+                    g.FillPath(paperBrush, innerPath);
+
+                    // Vẽ các đường kẻ để mô phỏng nội dung text
+                    using (Pen linePen = new Pen(Color.FromArgb(180, 180, 180), 1))
+                    {
+                        int startY = size / 3;
+                        int lineSpacing = 2;
+                        for (int i = 0; i < 3 && startY + i * lineSpacing < size - 3; i++)
+                        {
+                            int lineWidth = (i == 2) ? (size - 6) / 2 : size - 6;
+                            g.DrawLine(linePen, 3, startY + i * lineSpacing, 3 + lineWidth, startY + i * lineSpacing);
+                        }
+                    }
+
+                    // Vẽ góc gập
+                    using (Pen foldPen = new Pen(Color.FromArgb(45, 95, 145), 1))
+                    {
+                        g.DrawLine(foldPen, size - foldSize - 1, 1, size - foldSize - 1, foldSize + 1);
+                        g.DrawLine(foldPen, size - foldSize - 1, foldSize + 1, size - 1, foldSize + 1);
+                    }
+
+                    // Vẽ viền ngoài
+                    using (Pen borderPen = new Pen(Color.FromArgb(45, 95, 145), 1))
+                    {
+                        g.DrawPath(borderPen, filePath);
+                    }
+                }
+            }
+            return bitmap;
+        }
+
         private void InitializeComponent()
         {
             this.Text = "Ứng dụng lưu trữ file";
@@ -40,12 +146,12 @@ namespace FileStorageClient
             this.FormClosing += MainForm_FormClosing;
             this.Icon = SystemIcons.Application;
 
-            // Tạo ImageList cho các biểu tượng
+            // Tạo ImageList cho các biểu tượng với icon tùy chỉnh
             _imageList = new ImageList();
             _imageList.ColorDepth = ColorDepth.Depth32Bit;
             _imageList.ImageSize = new Size(16, 16);
-            _imageList.Images.Add(SystemIcons.Application); // Index 0: Folder icon (thay thế SystemIcons.Folder)
-            _imageList.Images.Add(SystemIcons.WinLogo); // Index 1: File icon
+            _imageList.Images.Add(CreateFolderIcon(16)); // Index 0: Folder icon - màu vàng
+            _imageList.Images.Add(CreateFileIcon(16));   // Index 1: File icon - màu xanh dương
 
             // Panel đăng nhập
             Panel loginPanel = new Panel
@@ -390,39 +496,19 @@ namespace FileStorageClient
             if (selectedItem.SubItems[1].Text == "Thư mục")
             {
                 string dirName = selectedItem.Text;
-                if (dirName == "..")
+                // Đi vào thư mục con
+                string newPath = string.IsNullOrEmpty(_currentDirectory) ? 
+                    dirName : Path.Combine(_currentDirectory, dirName).Replace("\\", "/");
+                
+                var (success, _) = await _client.ListDirectoryAsync(newPath);
+                if (success)
                 {
-                    // Đi lên thư mục cha
-                    if (!string.IsNullOrEmpty(_currentDirectory))
-                    {
-                        int lastSlash = _currentDirectory.LastIndexOf('/');
-                        if (lastSlash >= 0)
-                        {
-                            _currentDirectory = _currentDirectory.Substring(0, lastSlash);
-                        }
-                        else
-                        {
-                            _currentDirectory = "";
-                        }
-                        RefreshFileList();
-                    }
+                    _currentDirectory = newPath;
+                    RefreshFileList();
                 }
                 else
                 {
-                    // Đi vào thư mục con
-                    string newPath = string.IsNullOrEmpty(_currentDirectory) ? 
-                        dirName : Path.Combine(_currentDirectory, dirName).Replace("\\", "/");
-                    
-                    var (success, _) = await _client.ListDirectoryAsync(newPath);
-                    if (success)
-                    {
-                        _currentDirectory = newPath;
-                        RefreshFileList();
-                    }
-                    else
-                    {
-                        MessageBox.Show("Không thể mở thư mục", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
+                    MessageBox.Show("Không thể mở thư mục", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
@@ -441,17 +527,6 @@ namespace FileStorageClient
             // Hiển thị đường dẫn hiện tại
             txtPath.Text = string.IsNullOrEmpty(_currentDirectory) ? "/" : _currentDirectory;
 
-            // Thêm mục đi lên thư mục cha (trừ khi đang ở thư mục gốc)
-            if (!string.IsNullOrEmpty(_currentDirectory))
-            {
-                ListViewItem parentItem = new ListViewItem("..")
-                {
-                    ImageIndex = 0
-                };
-                parentItem.SubItems.Add("Thư mục");
-                listView.Items.Add(parentItem);
-            }
-
             var (success, items) = await _client.ListDirectoryAsync(_currentDirectory);
             if (success)
             {
@@ -461,7 +536,7 @@ namespace FileStorageClient
                     {
                         ListViewItem dirItem = new ListViewItem(item.Substring(2))
                         {
-                            ImageIndex = 0
+                            ImageIndex = 0 // Folder icon (màu vàng)
                         };
                         dirItem.SubItems.Add("Thư mục");
                         listView.Items.Add(dirItem);
@@ -470,7 +545,7 @@ namespace FileStorageClient
                     {
                         ListViewItem fileItem = new ListViewItem(item.Substring(2))
                         {
-                            ImageIndex = 1
+                            ImageIndex = 1 // File icon (màu xanh dương)
                         };
                         fileItem.SubItems.Add("File");
                         listView.Items.Add(fileItem);
