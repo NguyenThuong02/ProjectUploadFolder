@@ -282,6 +282,8 @@ namespace FileStorageServer
         private readonly TcpClient _client;
         private readonly RequestHandler _requestHandler;
         private User? _currentUser = null;
+        // Tăng kích thước buffer lên đáng kể
+        private const int BufferSize = 1024 * 1024; // 1MB buffer
 
         public ClientHandler(TcpClient client, RequestHandler requestHandler)
         {
@@ -294,8 +296,13 @@ namespace FileStorageServer
             try
             {
                 using NetworkStream stream = _client.GetStream();
-                byte[] buffer = new byte[4096];
+                // Tăng kích thước buffer
+                byte[] buffer = new byte[BufferSize];
                 int bytesRead;
+                
+                // Tăng thời gian chờ để xử lý file lớn
+                _client.ReceiveTimeout = 300000; // 5 phút
+                _client.SendTimeout = 300000; // 5 phút
 
                 while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
                 {
@@ -435,16 +442,36 @@ namespace FileStorageServer
             }
 
             string path = request["path"];
-            byte[] fileData = Convert.FromBase64String(request["data"]);
+            try
+            {
+                // Thêm xử lý ngoại lệ khi chuyển đổi dữ liệu Base64
+                byte[] fileData = Convert.FromBase64String(request["data"]);
+                
+                // Kiểm tra kích thước file (tùy chọn - có thể đặt giới hạn cao hơn)
+                // Ví dụ: giới hạn 100MB
+                long maxFileSize = 100 * 1024 * 1024;
+                if (fileData.Length > maxFileSize)
+                {
+                    return CreateErrorResponse($"Kích thước file vượt quá giới hạn cho phép ({maxFileSize / (1024 * 1024)}MB)");
+                }
 
-            bool success = _requestHandler.UploadFile(_currentUser, path, fileData);
-            if (success)
-            {
-                return CreateSuccessResponse("Tải file lên thành công");
+                bool success = _requestHandler.UploadFile(_currentUser, path, fileData);
+                if (success)
+                {
+                    return CreateSuccessResponse("Tải file lên thành công");
+                }
+                else
+                {
+                    return CreateErrorResponse("Không thể tải file lên");
+                }
             }
-            else
+            catch (FormatException ex)
             {
-                return CreateErrorResponse("Không thể tải file lên");
+                return CreateErrorResponse($"Lỗi xử lý dữ liệu file: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                return CreateErrorResponse($"Lỗi không xác định: {ex.Message}");
             }
         }
 
@@ -558,6 +585,9 @@ namespace FileStorageServer
                 while (true)
                 {
                     TcpClient client = await server.AcceptTcpClientAsync();
+                    // Cấu hình TcpClient để xử lý dữ liệu lớn
+                    client.ReceiveBufferSize = 1024 * 1024; // 1MB
+                    client.SendBufferSize = 1024 * 1024; // 1MB
                     Console.WriteLine("Client đã kết nối");
 
                     ClientHandler clientHandler = new ClientHandler(client, requestHandler);

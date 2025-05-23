@@ -31,6 +31,13 @@ namespace FileStorageClient
                 _client = new TcpClient();
                 await _client.ConnectAsync(_serverIp, _serverPort);
                 _stream = _client.GetStream();
+                
+                // Cấu hình buffer size để xử lý file lớn
+                _client.ReceiveBufferSize = 1024 * 1024; // 1MB
+                _client.SendBufferSize = 1024 * 1024; // 1MB
+                _client.ReceiveTimeout = 300000; // 5 phút
+                _client.SendTimeout = 300000; // 5 phút
+                
                 return true;
             }
             catch (Exception ex)
@@ -61,9 +68,37 @@ namespace FileStorageClient
                 byte[] requestData = Encoding.UTF8.GetBytes(requestJson);
                 await _stream.WriteAsync(requestData, 0, requestData.Length);
 
-                byte[] buffer = new byte[4096];
-                int bytesRead = await _stream.ReadAsync(buffer, 0, buffer.Length);
-                return Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                // Sử dụng StringBuilder để tích lũy dữ liệu
+                StringBuilder responseBuilder = new StringBuilder();
+                byte[] buffer = new byte[1024 * 1024]; // 1MB buffer
+                int totalBytesRead = 0;
+                
+                // Đọc dữ liệu cho đến khi nhận được response hoàn chỉnh
+                while (true)
+                {
+                    int bytesRead = await _stream.ReadAsync(buffer, 0, buffer.Length);
+                    if (bytesRead == 0)
+                        break;
+                        
+                    string chunk = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                    responseBuilder.Append(chunk);
+                    totalBytesRead += bytesRead;
+                    
+                    // Kiểm tra xem có phải là JSON hoàn chỉnh không
+                    string currentResponse = responseBuilder.ToString();
+                    if (IsCompleteJsonResponse(currentResponse))
+                    {
+                        return currentResponse;
+                    }
+                    
+                    // Giới hạn kích thước response để tránh memory overflow
+                    if (totalBytesRead > 200 * 1024 * 1024) // 200MB limit
+                    {
+                        throw new Exception("Response quá lớn");
+                    }
+                }
+                
+                return responseBuilder.ToString();
             }
             catch (Exception ex)
             {
@@ -73,6 +108,26 @@ namespace FileStorageClient
                     { "status", "error" },
                     { "message", $"Lỗi gửi yêu cầu: {ex.Message}" }
                 });
+            }
+        }
+        
+        // Kiểm tra xem JSON response có hoàn chỉnh không
+        private bool IsCompleteJsonResponse(string response)
+        {
+            try
+            {
+                using (JsonDocument.Parse(response))
+                {
+                    return true;
+                }
+            }
+            catch (JsonException)
+            {
+                return false;
+            }
+            catch
+            {
+                return false;
             }
         }
     }
@@ -191,8 +246,37 @@ namespace FileStorageClient
                         { "message", "File không tồn tại" }
                     });
                 }
-
-                byte[] fileData = File.ReadAllBytes(localFilePath);
+        
+                // Kiểm tra kích thước file
+                FileInfo fileInfo = new FileInfo(localFilePath);
+                long fileSize = fileInfo.Length;
+                
+                // Giới hạn kích thước file
+                const long MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+                if (fileSize > MAX_FILE_SIZE)
+                {
+                    return JsonSerializer.Serialize(new Dictionary<string, string>
+                    {
+                        { "status", "error" },
+                        { "message", $"File quá lớn. Giới hạn là {MAX_FILE_SIZE / (1024 * 1024)}MB" }
+                    });
+                }
+                
+                // Đọc file và chuyển đổi thành Base64
+                byte[] fileData;
+                try
+                {
+                    fileData = File.ReadAllBytes(localFilePath);
+                }
+                catch (OutOfMemoryException)
+                {
+                    return JsonSerializer.Serialize(new Dictionary<string, string>
+                    {
+                        { "status", "error" },
+                        { "message", "File quá lớn, không đủ bộ nhớ để xử lý" }
+                    });
+                }
+                
                 string base64Data = Convert.ToBase64String(fileData);
 
                 Dictionary<string, string> request = new Dictionary<string, string>
@@ -235,25 +319,41 @@ namespace FileStorageClient
                 };
 
                 string response = await _connection.SendRequestAsync(request);
+                
+                // Thêm logging để debug
+                Console.WriteLine($"Download response length: {response.Length}");
+                Console.WriteLine($"Download response preview: {response.Substring(0, Math.Min(200, response.Length))}...");
+                
                 Dictionary<string, string>? responseObj = JsonSerializer.Deserialize<Dictionary<string, string>>(response);
 
                 if (responseObj != null && responseObj.ContainsKey("status") && responseObj["status"] == "success" && responseObj.ContainsKey("data"))
                 {
-                    byte[] fileData = Convert.FromBase64String(responseObj["data"]);
-                    
-                    // Tạo thư mục cha nếu chưa tồn tại
-                    string? directory = Path.GetDirectoryName(localFilePath);
-                    if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                    try
                     {
-                        Directory.CreateDirectory(directory);
+                        byte[] fileData = Convert.FromBase64String(responseObj["data"]);
+                        
+                        // Tạo thư mục cha nếu chưa tồn tại
+                        string? directory = Path.GetDirectoryName(localFilePath);
+                        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                        {
+                            Directory.CreateDirectory(directory);
+                        }
+                        
+                        File.WriteAllBytes(localFilePath, fileData);
+                        return JsonSerializer.Serialize(new Dictionary<string, string>
+                        {
+                            { "status", "success" },
+                            { "message", "Tải file xuống thành công" }
+                        });
                     }
-                    
-                    File.WriteAllBytes(localFilePath, fileData);
-                    return JsonSerializer.Serialize(new Dictionary<string, string>
+                    catch (Exception ex)
                     {
-                        { "status", "success" },
-                        { "message", "Tải file xuống thành công" }
-                    });
+                        return JsonSerializer.Serialize(new Dictionary<string, string>
+                        {
+                            { "status", "error" },
+                            { "message", $"Lỗi xử lý dữ liệu file: {ex.Message}" }
+                        });
+                    }
                 }
                 
                 return response;
@@ -345,90 +445,8 @@ namespace FileStorageClient
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new MainForm());
         }
-        // Xóa phương thức Main thứ hai này
-        // static async Task Main(string[] args)
-        // {
-        //     Console.OutputEncoding = Encoding.UTF8;
-        //     Console.InputEncoding = Encoding.UTF8;
-        //     
-        //     Console.WriteLine("===== ỨNG DỤNG LƯU TRỮ FILE CLIENT =====");
-        //     
-        //     string serverIp = "127.0.0.1";
-        //     int serverPort = 8888;
-        //     
-        //     FileStorageClient client = new FileStorageClient(serverIp, serverPort);
-        //     
-        //     Console.WriteLine("Đang kết nối đến server...");
-        //     bool connected = await client.ConnectAsync();
-        //     if (!connected)
-        //     {
-        //         Console.WriteLine("Không thể kết nối đến server. Ứng dụng sẽ thoát.");
-        //         return;
-        //     }
-        //     
-        //     Console.WriteLine("Đã kết nối đến server!");
-        //     
-        //     bool running = true;
-        //     while (running)
-        //     {
-        //         Console.WriteLine("\n===== MENU =====");
-        //         Console.WriteLine("1. Đăng ký tài khoản");
-        //         Console.WriteLine("2. Đăng nhập");
-        //         Console.WriteLine("3. Tạo thư mục");
-        //         Console.WriteLine("4. Tải file lên");
-        //         Console.WriteLine("5. Tải file xuống");
-        //         Console.WriteLine("6. Xóa file hoặc thư mục");
-        //         Console.WriteLine("7. Liệt kê nội dung thư mục");
-        //         Console.WriteLine("8. Đăng xuất");
-        //         Console.WriteLine("9. Thoát");
-        //         Console.Write("Chọn chức năng: ");
-        //         
-        //         if (!int.TryParse(Console.ReadLine(), out int choice))
-        //         {
-        //             Console.WriteLine("Lựa chọn không hợp lệ!");
-        //             continue;
-        //         }
-        //         
-        //         switch (choice)
-        //         {
-        //             case 1: // Đăng ký
-        //                 await RegisterAsync(client);
-        //                 break;
-        //             case 2: // Đăng nhập
-        //                 await LoginAsync(client);
-        //                 break;
-        //             case 3: // Tạo thư mục
-        //                 await CreateDirectoryAsync(client);
-        //                 break;
-        //             case 4: // Tải file lên
-        //                 await UploadFileAsync(client);
-        //                 break;
-        //             case 5: // Tải file xuống
-        //                 await DownloadFileAsync(client);
-        //                 break;
-        //             case 6: // Xóa file hoặc thư mục
-        //                 await DeleteAsync(client);
-        //                 break;
-        //             case 7: // Liệt kê nội dung thư mục
-        //                 await ListDirectoryAsync(client);
-        //                 break;
-        //             case 8: // Đăng xuất
-        //                 await LogoutAsync(client);
-        //                 break;
-        //             case 9: // Thoát
-        //                 running = false;
-        //                 break;
-        //             default:
-        //                 Console.WriteLine("Lựa chọn không hợp lệ!");
-        //                 break;
-        //         }
-        //     }
-        //     
-        //     client.Disconnect();
-        //     Console.WriteLine("Đã đóng kết nối. Ứng dụng sẽ thoát.");
-        // }
-        // Giữ lại các phương thức hỗ trợ khác
-        // Xử lý đăng ký
+        
+        // Các phương thức console helper (giữ nguyên như cũ)
         static async Task RegisterAsync(FileStorageClient client)
         {
             Console.Write("Nhập tên người dùng: ");
